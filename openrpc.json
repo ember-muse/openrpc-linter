@@ -1,0 +1,46 @@
+{
+  "info": {
+    "title": "some example",
+    "version": "1.0.0"
+  },
+  "methods": [
+    {
+      "name": "some_method",
+      "description": "An example method",
+      "errors": [
+        {
+          "code": -32602,
+          "data": "Invalid method parameter(s)",
+          "message": "Invalid params"
+        },
+        {
+          "code": -32603,
+          "data": "Internal JSON-RPC error",
+          "message": "Internal error"
+        }
+      ],
+      "params": [
+        {
+          "name": "param1",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "examples": [
+        {
+          "name": "example1",
+          "params": {
+            "param1": "test"
+          },
+          "result": {
+            "name": "success",
+            "value": "OK"
+          }
+        }
+      ]
+    }
+  ],
+  "openrpc": "1.2.6"
+}
