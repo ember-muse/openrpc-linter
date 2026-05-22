@@ -10,7 +10,7 @@ Fast, extensible linter for OpenRPC documents.
 go install github.com/open-rpc/openrpc-linter@latest
 ```
 
-Create a `rules.yml`. A rules file must include **`extends` and/or `rules`** — at least one is required. Both keys are optional individually; omit `rules` to run the inherited set as-is, or omit `extends` for a fully custom ruleset (see [Rules](#rules)).
+Create a `rules.yml` — or run `openrpc-linter init` to scaffold one that extends `recommended`. A rules file must include **`extends` and/or `rules`** — at least one is required. Both keys are optional individually; omit `rules` to run the inherited set as-is, or omit `extends` for a fully custom ruleset (see [Rules](#rules)).
 
 ```yaml
 # optional — inherit bundled rulesets (recommended is built in)
@@ -29,20 +29,9 @@ Pass it to `lint` with `-r rules.yml` (no default rules path). `recommended` res
 
 ```bash
 openrpc-linter lint openrpc.json -r rules.yml
-<<<<<<< HEAD
-
-# Create a basic rules.yml using the recommended rules
-openrpc-linter init
-
-# JSON output
-openrpc-linter lint openrpc.json -r rules.yml -f json
-
-# Validate document structure
-openrpc-linter validate openrpc.json
-=======
+openrpc-linter init                              # create a basic rules.yml w/ recommmended rules
 openrpc-linter lint -r rules.yml -f json          # default path: openrpc.json
 openrpc-linter validate openrpc.json              # JSON Schema only
->>>>>>> 0daa41e (chore: update README.md)
 ```
 
 Example text output:
@@ -57,25 +46,10 @@ openrpc.json
 debug_getBadBlocks
   methods[0].description                   error    missing field 'description'                               method-description
   methods[0].result.schema.description     warning  missing field 'description'                               schema-description
-    schema: "Bad block"
-
-<<<<<<< HEAD
-debug_getRawBlock
-  methods[1].params[0].schema.description  warning  missing field 'description'                               schema-description
-    param: "n"
-    schema: "Block"
-
-schema "Pet"
-  components.schemas.Pet.title             warning  missing field 'title'                                     schema-title
+    schema: "BlockObject"
 
 info
   info.license                             warning  missing field 'license'                                   info-license
-
-7 errors, 8 warnings found in 8 rules
-=======
-info
-  info.license                             warning  missing required field 'license'                          info-license
->>>>>>> 0daa41e (chore: update README.md)
 ```
 
 Text output groups violations by method, schema, or top-level section and colors rows on a TTY (`NO_COLOR` / `FORCE_COLOR`). JSON output (`-f json`) is a flat violation list with `path` and `pathLabels`.
@@ -83,13 +57,6 @@ Text output groups violations by method, schema, or top-level section and colors
 ## Rules
 
 Define custom rules with `given` (JSONPath) and a built-in function in `then`:
-
-```yaml
-extends:
-  - recommended
-```
-
-Or define custom rules:
 
 ```yaml
 rules:
@@ -115,7 +82,7 @@ Point `given` at the thing you want to check: a field path for presence (`truthy
 
 Require the selected field to exist and be non-empty. `nil`, `""`, and `"null"` fail. No options.
 
-In field or descendant-field mode, missing fields report `missing required field '<name>'`.
+In field or descendant-field mode, missing fields report `missing field '<name>'`.
 
 ```yaml
 method-description:
