@@ -36,6 +36,7 @@ Feature: Recommended ruleset
       | example-description | methods[0].examples[0].description      |
       | schema-title        | methods[0].params[0].schema.title       |
       | schema-description  | methods[0].params[0].schema.description |
+      | schema-type         | methods[0].params[0].schema.type        |
 
   Scenario Outline: Out-of-bounds value warns for the matching rule
     Given a fully populated OpenRPC document covering every approved rule
@@ -80,4 +81,5 @@ Feature: Recommended ruleset
       | example-description   |
       | schema-title          |
       | schema-description    |
+      | schema-type           |
       | methods-non-empty     |

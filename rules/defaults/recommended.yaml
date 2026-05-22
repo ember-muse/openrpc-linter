@@ -72,6 +72,21 @@ rules:
     severity: "warn"
     then:
       function: "truthy"
+  schema-type:
+    description: "Schema should have a type (or a composition keyword like oneOf/anyOf/allOf/enum/const/$ref)."
+    given: "$..schema"
+    severity: "warn"
+    then:
+      function: "schema"
+      functionOptions:
+        anyOf:
+          - { required: ["type"] }
+          - { required: ["oneOf"] }
+          - { required: ["anyOf"] }
+          - { required: ["allOf"] }
+          - { required: ["enum"] }
+          - { required: ["const"] }
+          - { required: ["$ref"] }
   methods-non-empty:
     description: "Document should declare at least one method."
     given: "$.methods"
