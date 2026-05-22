@@ -132,3 +132,39 @@ rules:
       functionOptions:
         type: "string"
         maxLength: 120
+  unique-method-names:
+    description: "Method names must be unique."
+    given: "$.methods[*].name"
+    severity: "error"
+    then:
+      function: "unique"
+  unique-method-summary:
+    description: "Method summaries should be unique."
+    given: "$.methods[*].summary"
+    severity: "warn"
+    then:
+      function: "unique"
+  unique-param-names-per-method:
+    description: "Param names should be unique within each method."
+    given: "$.methods[*].params[*].name"
+    severity: "error"
+    then:
+      function: "unique"
+      functionOptions:
+        scope: "$.methods[*]"
+  unique-error-codes-per-method:
+    description: "Error codes should be unique within each method."
+    given: "$.methods[*].errors[*].code"
+    severity: "error"
+    then:
+      function: "unique"
+      functionOptions:
+        scope: "$.methods[*]"
+  unique-example-names-per-method:
+    description: "Example names should be unique within each method."
+    given: "$.methods[*].examples[*].name"
+    severity: "error"
+    then:
+      function: "unique"
+      functionOptions:
+        scope: "$.methods[*]"

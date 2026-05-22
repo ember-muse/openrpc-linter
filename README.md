@@ -4,27 +4,37 @@
 
 Fast, extensible linter for OpenRPC documents.
 
+## Getting started
+
+```bash
+go install github.com/open-rpc/openrpc-linter@latest
+```
+
+Create a `rules.yml` — or run `openrpc-linter init` to scaffold one that extends `recommended`. A rules file must include **`extends` and/or `rules`** — at least one is required. Both keys are optional individually; omit `rules` to run the inherited set as-is, or omit `extends` for a fully custom ruleset (see [Rules](#rules)).
+
+```yaml
+# optional — inherit bundled rulesets (recommended is built in)
+extends:
+  - recommended
+
+# optional — override severity or add custom rules (see Rules below)
+rules:
+  info-license:
+    severity: ignore
+```
+
+Pass it to `lint` with `-r rules.yml` (no default rules path). `recommended` resolves to the bundled ruleset in `rules/defaults/recommended.yaml`.
+
 ## Usage
 
 ```bash
-# Lint with default rules
 openrpc-linter lint openrpc.json -r rules.yml
-
-# Create a basic rules.yml using the recommended rules
-openrpc-linter init
-
-# JSON output
-openrpc-linter lint openrpc.json -r rules.yml -f json
-
-# Validate document structure
-openrpc-linter validate openrpc.json
+openrpc-linter init                              # create a basic rules.yml w/ recommmended rules
+openrpc-linter lint -r rules.yml -f json          # default path: openrpc.json
+openrpc-linter validate openrpc.json              # JSON Schema only
 ```
 
-### Lint output
-
-Text violations are grouped by their most-specific document anchor: one section per RPC method, per top-level `components.schemas/contentDescriptors/tags` entry, or per top-level OpenRPC section (`info`, etc.). Anything that doesn't match falls into a `general` bucket. Each row shows `path / level / message / rule`; the source file and a summary are printed once at the top and the summary is repeated at the bottom.
-
-Column max widths (longer values truncate with `…`): path 48, severity 7, message 56, rule 32. Secondary anchors (param name, schema title, descriptor name, tag) that aren't the group key render as indented continuation lines underneath the row.
+Example text output:
 
 ```text
 openrpc.json
@@ -36,52 +46,17 @@ openrpc.json
 debug_getBadBlocks
   methods[0].description                   error    missing field 'description'                               method-description
   methods[0].result.schema.description     warning  missing field 'description'                               schema-description
-    schema: "Bad block"
-
-debug_getRawBlock
-  methods[1].params[0].schema.description  warning  missing field 'description'                               schema-description
-    param: "n"
-    schema: "Block"
-
-schema "Pet"
-  components.schemas.Pet.title             warning  missing field 'title'                                     schema-title
+    schema: "BlockObject"
 
 info
   info.license                             warning  missing field 'license'                                   info-license
-
-7 errors, 8 warnings found in 8 rules
 ```
 
-Group ordering is stable: method groups first (ordered by their `methods[N]` document position), then component `schema`/`descriptor`/`tag` groups (alphabetical), then other top-level sections, then `general`.
-
-When stdout is a TTY the row is colored to give the severity column visual priority:
-
-- `error` bright red, `warning` yellow, `info` blue
-- path: dark grey
-- message: light grey
-- rule id: dark grey
-- secondary continuation lines (`schema: "..."`, `param: "..."`): dark grey
-
-Colors are skipped when piped or redirected, when `NO_COLOR` is set, or when `TERM=dumb`. Set `FORCE_COLOR=1` (or `CLICOLOR_FORCE=1`) to opt back in for piped output.
-
-JSON output is unchanged (flat list with `pathLabels` alongside the canonical `path` array); clients can group themselves.
-
-## Install
-
-```bash
-go install github.com/open-rpc/openrpc-linter@latest
-```
+Text output groups violations by method, schema, or top-level section and colors rows on a TTY (`NO_COLOR` / `FORCE_COLOR`). JSON output (`-f json`) is a flat violation list with `path` and `pathLabels`.
 
 ## Rules
 
-Create a rules `rules.yml` with rules you want to apply:
-
-```yaml
-extends:
-  - recommended
-```
-
-Or define custom rules:
+Define custom rules with `given` (JSONPath) and a built-in function in `then`:
 
 ```yaml
 rules:
@@ -93,30 +68,88 @@ rules:
       function: "truthy"
 ```
 
-The built-in functions currently include:
+### Selecting with `given`
 
-- `truthy`: require a selected value to be present and non-empty
-- `unique`: require every selected value to be distinct across one rule run
+The selector turns `given` into one target per matched node. The path shape determines what each function receives:
 
-`unique` is symmetric with `truthy`: point `given` directly at the values you want to compare. By default duplicates are tracked in a single global bucket per rule run. Set `functionOptions.scope` to a JSONPath to partition duplicates by the longest-matching scope; targets outside every scope match are skipped (not deduped globally).
+- **Field mode** — paths ending in a field name (e.g. `$.info.description`, `$.methods[*].summary`): one target per parent object. Missing fields are reported as absent (`Exists=false`).
+- **Value mode** — paths ending in a wildcard, index, filter, or collection (e.g. `$.methods`, `$.methods[*].name`): the selected node or value directly.
+- **Descendant field mode** — paths with `..` before a terminal field (e.g. `$..schema.description`): like field mode, but uses the OpenRPC meta-schema index to find candidates even when the field is absent.
+
+Point `given` at the thing you want to check: a field path for presence (`truthy`), a value path for shape, length, or uniqueness (`schema`, `unique`).
+
+### `truthy`
+
+Require the selected field to exist and be non-empty. `nil`, `""`, and `"null"` fail. No options.
+
+In field or descendant-field mode, missing fields report `missing field '<name>'`.
 
 ```yaml
-rules:
-  unique-method-names:
-    description: "Method names must be unique"
-    given: "$.methods[*].name"
-    severity: "error"
-    then:
-      function: "unique"
-
-  unique-param-names-per-method:
-    description: "Param names should be unique within each method"
-    given: "$.methods[*].params[*].name"
-    severity: "error"
-    then:
-      function: "unique"
-      functionOptions:
-        scope: "$.methods[*]"
+method-description:
+  given: "$.methods[*].description"
+  severity: "error"
+  then:
+    function: "truthy"
 ```
 
-`unique` also supports `then.functionOptions.ignoreMissing`, which defaults to `true` and only matters for `given` paths whose terminal segment is a field name (so the selector can emit missing-field targets).
+### `schema`
+
+Validate each selected value against a JSON Schema fragment in `functionOptions`. Any valid JSON Schema keywords work (via [santhosh-tekuri/jsonschema](https://github.com/santhosh-tekuri/jsonschema)). `functionOptions` is the schema itself — no wrapper key.
+
+Missing fields are skipped silently; pair with `truthy` on the same field if you need both presence and shape. Violations report `Value does not match schema: …`.
+
+```yaml
+# array length
+methods-non-empty:
+  given: "$.methods"
+  then:
+    function: "schema"
+    functionOptions:
+      type: "array"
+      minItems: 1
+
+# string length
+method-summary-length:
+  given: "$.methods[*].summary"
+  then:
+    function: "schema"
+    functionOptions:
+      type: "string"
+      maxLength: 120
+
+# array max size
+param-count-limit:
+  given: "$.methods[*].params"
+  then:
+    function: "schema"
+    functionOptions:
+      type: "array"
+      maxItems: 4
+```
+
+### `unique`
+
+Require primitive values selected by `given` to be distinct within a scope bucket for the rule run. Supported types: string, bool, number, null.
+
+Options:
+
+- `scope` (JSONPath, optional) — partition duplicate tracking by longest-matching scope path. Targets outside all scopes are skipped (not deduped globally). Default: one global bucket.
+- `ignoreMissing` (bool, default `true`) — in field-mode paths, skip missing targets; set `false` to treat missing as duplicate `null`.
+
+```yaml
+# global uniqueness
+unique-method-names:
+  given: "$.methods[*].name"
+  then:
+    function: "unique"
+
+# per-method uniqueness
+unique-param-names-per-method:
+  given: "$.methods[*].params[*].name"
+  then:
+    function: "unique"
+    functionOptions:
+      scope: "$.methods[*]"
+```
+
+`ignoreMissing` only matters for `given` paths whose terminal segment is a field name (so the selector can emit missing-field targets).
