@@ -1,0 +1,37 @@
+{
+  "name": "@open-rpc/openrpc-linter",
+  "version": "0.0.0",
+  "description": "Fast, extensible linter for OpenRPC documents",
+  "homepage": "https://github.com/open-rpc/openrpc-linter",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-rpc/openrpc-linter.git"
+  },
+  "license": "MIT",
+  "bin": {
+    "openrpc-linter": "bin/openrpc-linter.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "optionalDependencies": {
+    "@open-rpc/openrpc-linter-darwin-arm64": "0.0.0",
+    "@open-rpc/openrpc-linter-darwin-x64": "0.0.0",
+    "@open-rpc/openrpc-linter-linux-arm64": "0.0.0",
+    "@open-rpc/openrpc-linter-linux-x64": "0.0.0",
+    "@open-rpc/openrpc-linter-win32-arm64": "0.0.0",
+    "@open-rpc/openrpc-linter-win32-x64": "0.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

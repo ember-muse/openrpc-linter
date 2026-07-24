@@ -10,6 +10,12 @@ Fast, extensible linter for OpenRPC documents.
 go install github.com/open-rpc/openrpc-linter@latest
 ```
 
+Or, if your project already lives in the npm world:
+
+```bash
+npm install --save-dev @open-rpc/openrpc-linter
+```
+
 Create a `rules.yml` — or run `openrpc-linter init` to scaffold one that extends `recommended`. A rules file must include **`extends` and/or `rules`** — at least one is required. Both keys are optional individually; omit `rules` to run the inherited set as-is, or omit `extends` for a fully custom ruleset (see [Rules](#rules)).
 
 ```yaml

@@ -1,0 +1,23 @@
+{
+  "name": "@open-rpc/openrpc-linter-darwin-x64",
+  "version": "0.0.0",
+  "description": "openrpc-linter prebuilt binary for darwin/x64",
+  "homepage": "https://github.com/open-rpc/openrpc-linter",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-rpc/openrpc-linter.git"
+  },
+  "license": "MIT",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
