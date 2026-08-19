@@ -61,6 +61,22 @@ function npmPublish(dir) {
   execFileSync("npm", args, { cwd: dir, stdio: "inherit" });
 }
 
+function alreadyPublished(pkgName, dir) {
+  // Idempotent retry: if this exact version is already in the registry
+  // (e.g. a previous release run died partway through, after some packages
+  // went out but before this one), skip it instead of aborting the whole
+  // release on npm's "cannot publish over a previously published version".
+  try {
+    execFileSync("npm", ["view", `${pkgName}@${version}`, "version"], {
+      cwd: dir,
+      stdio: "pipe",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function publishPlatformPackage(platform, binaryPath) {
   const pkgDir = path.join(npmRoot, "platforms", platform.dir);
   const binDir = path.join(pkgDir, "bin");
@@ -75,6 +91,11 @@ function publishPlatformPackage(platform, binaryPath) {
   pkgJson.version = version;
   fs.writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + "\n");
 
+  if (!dryRun && alreadyPublished(pkgJson.name, pkgDir)) {
+    console.warn(`${pkgJson.name}@${version} already in the registry, skipping`);
+    return;
+  }
+
   npmPublish(pkgDir);
 }
 
@@ -87,6 +108,11 @@ function publishRootPackage() {
     pkgJson.optionalDependencies[name] = version;
   }
   fs.writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + "\n");
+
+  if (!dryRun && alreadyPublished(pkgJson.name, pkgDir)) {
+    console.warn(`${pkgJson.name}@${version} already in the registry, skipping`);
+    return;
+  }
 
   npmPublish(pkgDir);
 }
