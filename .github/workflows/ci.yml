@@ -73,3 +73,35 @@ jobs:
       with:
         version: latest
         args: --timeout=5m --issues-exit-code=0 
+
+  npm:
+    name: npm (shim smoke)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # One runner per host OS/arch the npm packages ship for. Each runner
+        # builds its own host binary and runs the bin shim end-to-end against
+        # it — this is exactly what an end user gets from `npm install`.
+        os: [ubuntu-latest, windows-latest, macos-14, macos-15]
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - name: Build host binary
+      run: go build -o npm/test/host-bin .
+
+    - name: Run npm package tests
+      env:
+        OPENRPC_LINTER_TEST_BINARY: ${{ github.workspace }}/npm/test/host-bin
+      run: node --test npm/test/shim.test.mjs npm/test/versions.test.mjs

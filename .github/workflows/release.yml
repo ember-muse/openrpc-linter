@@ -58,4 +58,18 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish npm packages
+        if: steps.check.outputs.skip == 'false'
+        run: node npm/scripts/publish.mjs
+        env:
+          VERSION: ${{ steps.tag.outputs.new_tag }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 

@@ -1,0 +1,23 @@
+{
+  "name": "@open-rpc/openrpc-linter-linux-arm64",
+  "version": "0.0.0",
+  "description": "openrpc-linter prebuilt binary for linux/arm64",
+  "homepage": "https://github.com/open-rpc/openrpc-linter",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-rpc/openrpc-linter.git"
+  },
+  "license": "MIT",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "bin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

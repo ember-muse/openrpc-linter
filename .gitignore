@@ -2,6 +2,9 @@ openrpc-linter
 coverage.out
 *.prof
 
+# npm test host binary (built locally by CI / smoke tests)
+npm/test/host-bin
+
 # GoReleaser
 dist/
 .claude/
