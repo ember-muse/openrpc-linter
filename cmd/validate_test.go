@@ -2,161 +2,83 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
-func TestValidateCommand(t *testing.T) {
-	tests := []struct {
-		name           string
-		filename       string
-		fileContent    string
-		expectedOutput string
-		expectError    bool
-	}{
-		{
-			name:     "valid openrpc document",
-			filename: "test_valid.json",
-			fileContent: `{
-				"openrpc": "1.2.6",
-				"info": {
-					"title": "Test API",
-					"version": "1.0.0"
-				},
-				"methods": [
-					{
-						"name": "test_method",
-						"params": []
-					}
-				]
-			}`,
-			expectedOutput: "✅ OpenRPC document is valid!",
-			expectError:    false,
-		},
-		{
-			name:     "missing required openrpc field",
-			filename: "test_invalid.json",
-			fileContent: `{
-				"info": {
-					"title": "Test API",
-					"version": "1.0.0"
-				},
-				"methods": []
-			}`,
-			expectedOutput: "❌ Validation failed:",
-			expectError:    true,
-		},
-		{
-			name:     "missing required info field",
-			filename: "test_invalid2.json",
-			fileContent: `{
-				"openrpc": "1.2.6",
-				"methods": []
-			}`,
-			expectedOutput: "❌ Validation failed:",
-			expectError:    true,
-		},
-		{
-			name:     "invalid json format",
-			filename: "test_malformed.json",
-			fileContent: `{
-				"openrpc": "1.2.6",
-				"info": {
-					"title": "Test API"
-					"version": "1.0.0"
-				}
-			}`,
-			expectedOutput: "Error parsing JSON:",
-			expectError:    true,
-		},
+type schemaTransport struct {
+	body   string
+	status int
+	err    error
+}
+
+func (s schemaTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	if s.err != nil {
+		return nil, s.err
 	}
+	return &http.Response{StatusCode: s.status, Status: http.StatusText(s.status), Body: io.NopCloser(strings.NewReader(s.body)), Header: make(http.Header)}, nil
+}
 
-	for _, tt := range tests {
+func TestValidateCommand(t *testing.T) {
+	const schema = `{"type":"object","required":["openrpc"]}`
+	for _, tt := range []struct {
+		name           string
+		document       string
+		schema         string
+		status         int
+		transportError error
+		wantError      string
+	}{
+		{name: "valid default file", document: `{"openrpc":"1.2.6"}`, schema: schema, status: 200},
+		{name: "invalid document", document: `{}`, schema: schema, status: 200, wantError: "Validation failed"},
+		{name: "malformed document", document: `{`, schema: schema, status: 200, wantError: "Error parsing JSON"},
+		{name: "missing file", schema: schema, status: 200, wantError: "Error reading openrpc.json"},
+		{name: "malformed schema", schema: `{`, status: 200, wantError: "Error parsing schema JSON"},
+		{name: "invalid schema", schema: `{"type":"bogus"}`, status: 200, wantError: "Error compiling schema"},
+		{name: "HTTP failure", status: 503, wantError: "cannot load OpenRPC schema"},
+		{name: "network failure", transportError: errors.New("offline"), wantError: "offline"},
+	} {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create test file
-			err := os.WriteFile(tt.filename, []byte(tt.fileContent), 0644)
-			if err != nil {
-				t.Fatalf("Failed to create test file: %v", err)
+			t.Chdir(t.TempDir())
+			if tt.document != "" {
+				err := os.WriteFile("openrpc.json", []byte(tt.document), 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
-			defer os.Remove(tt.filename) // Clean up
-
-			// Capture stdout since the validate command uses fmt.Printf
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
-			// Execute the validate command function directly
-			validateCmd.Run(validateCmd, []string{tt.filename})
-
-			// Restore stdout and read captured output
-			w.Close()
-			os.Stdout = oldStdout
-
-			var buf bytes.Buffer
-			_, err = buf.ReadFrom(r)
-			if err != nil {
-				t.Fatalf("Read captured output: %v", err)
+			original := http.DefaultClient
+			http.DefaultClient = &http.Client{Transport: schemaTransport{body: tt.schema, status: tt.status, err: tt.transportError}}
+			t.Cleanup(func() { http.DefaultClient = original })
+			// Execute through Cobra so returning an error reaches the CLI exit handler.
+			command := &cobra.Command{Use: "openrpc-linter"}
+			validation := *validateCmd
+			command.AddCommand(&validation)
+			var output bytes.Buffer
+			command.SetOut(&output)
+			command.SetErr(&output)
+			command.SetArgs([]string{"validate"})
+			err := command.Execute()
+			if tt.wantError != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantError) {
+					t.Fatalf("expected %q error, got %v", tt.wantError, err)
+				}
+				if strings.Contains(output.String(), "✅") {
+					t.Fatalf("failure reports success: %s", &output)
+				}
+				return
 			}
-			output := buf.String()
-
-			// Check if expected output is present
-			if !strings.Contains(output, tt.expectedOutput) {
-				t.Errorf("Expected output to contain '%s', got: '%s'", tt.expectedOutput, output)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(output.String(), "✅ OpenRPC document is valid!") {
+				t.Fatalf("missing success output: %s", &output)
 			}
 		})
-	}
-}
-
-func TestValidateCommandDefaultFile(t *testing.T) {
-	// Test that the command defaults to "openrpc.json" when no argument is provided
-	// Capture stdout since the validate command uses fmt.Printf
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	// Execute without arguments (should use default openrpc.json)
-	validateCmd.Run(validateCmd, []string{})
-
-	// Restore stdout and read captured output
-	w.Close()
-	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	_, err := buf.ReadFrom(r)
-	if err != nil {
-		t.Fatalf("Read captured output: %v", err)
-	}
-	output := buf.String()
-
-	// Should show it's validating openrpc.json
-	if !strings.Contains(output, "Validating OpenRPC document: openrpc.json") {
-		t.Errorf("Expected output to show default file 'openrpc.json', got: '%s'", output)
-	}
-}
-
-func TestValidateCommandNonExistentFile(t *testing.T) {
-	// Capture stdout since the validate command uses fmt.Printf
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	// Execute with non-existent file
-	validateCmd.Run(validateCmd, []string{"nonexistent.json"})
-
-	// Restore stdout and read captured output
-	w.Close()
-	os.Stdout = oldStdout
-
-	var buf bytes.Buffer
-	_, err := buf.ReadFrom(r)
-	if err != nil {
-		t.Fatalf("Read captured output: %v", err)
-	}
-	output := buf.String()
-
-	// Should show file read error
-	if !strings.Contains(output, "Error reading nonexistent.json") {
-		t.Errorf("Expected output to show file read error, got: '%s'", output)
 	}
 }
