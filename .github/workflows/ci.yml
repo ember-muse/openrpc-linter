@@ -72,7 +72,7 @@ jobs:
       uses: golangci/golangci-lint-action@v6
       with:
         version: latest
-        args: --timeout=5m --issues-exit-code=0 
+        args: --timeout=5m
 
   npm:
     name: npm (shim smoke)
