@@ -39,8 +39,10 @@ test-race: ## Run tests with race detector
 
 .PHONY: lint
 lint: ## Run linters
-	gofmt -d -s .
+	@test -z "$$(gofmt -l -s .)" || { gofmt -d -s .; exit 1; }
 	go vet ./...
+	# Keep golangci-lint v1 on its supported Go toolchain, including locally.
+	GOTOOLCHAIN=go1.24.5 go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 run --timeout=5m
 
 .PHONY: fmt
 fmt: ## Format the code

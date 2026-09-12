@@ -94,7 +94,10 @@ func TestValidateCommand(t *testing.T) {
 			os.Stdout = oldStdout
 
 			var buf bytes.Buffer
-			buf.ReadFrom(r)
+			_, err = buf.ReadFrom(r)
+			if err != nil {
+				t.Fatalf("Read captured output: %v", err)
+			}
 			output := buf.String()
 
 			// Check if expected output is present
@@ -120,7 +123,10 @@ func TestValidateCommandDefaultFile(t *testing.T) {
 	os.Stdout = oldStdout
 
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, err := buf.ReadFrom(r)
+	if err != nil {
+		t.Fatalf("Read captured output: %v", err)
+	}
 	output := buf.String()
 
 	// Should show it's validating openrpc.json
@@ -143,7 +149,10 @@ func TestValidateCommandNonExistentFile(t *testing.T) {
 	os.Stdout = oldStdout
 
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, err := buf.ReadFrom(r)
+	if err != nil {
+		t.Fatalf("Read captured output: %v", err)
+	}
 	output := buf.String()
 
 	// Should show file read error
