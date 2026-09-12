@@ -34,6 +34,7 @@ Pass it to `lint` with `-r rules.yml` (no default rules path). `recommended` res
 ## Usage
 
 ```bash
+openrpc-linter --skill                           # print Markdown instructions for agents
 openrpc-linter lint openrpc.json -r rules.yml
 openrpc-linter init                              # create a basic rules.yml w/ recommmended rules
 openrpc-linter lint -r rules.yml -f json          # default path: openrpc.json
