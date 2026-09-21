@@ -160,3 +160,60 @@ unique-param-names-per-method:
 ```
 
 `ignoreMissing` only matters for `given` paths whose terminal segment is a field name (so the selector can emit missing-field targets).
+
+## Skills
+
+### Agent usage
+
+This tool comes bundled with an agent skill:
+npx @open-rpc/openrpc-linter --skill
+
+### What the skill does
+
+The skill tells an agent to use the `openrpc-linter` cli.
+
+With the skill installed, an agent can:
+
+- run the linter
+- inspect its output
+- drive the agent to auto fix linting issues
+- add/remove rules
+
+### Example in-context usage
+
+```sh
+Use the `@open-rpc/openrpc-linter` to validate and lint this open-rpc document, call --skill to figure out how, make fixes until there are no warning or errors.
+```
+
+### Example installation usages
+
+```sh
+use `npx @open-rpc/openrpc-linter --skill` to create an open-rpc linting skill
+```
+
+Then you might use the skill as follows
+
+```sh
+ Write a JSON-RPC api using OpenRPC, for a Pong game, and use the open-rpc linter skill to validate it until there are no errors or warnings
+```
+
+## CI
+
+Create a simple `lint.yaml` for your github actions workflow. You can use custom rules or just the recommend rules to get started see example below.
+
+```yaml
+name: Lint OpenRPC
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Run `npx @open-rpc/openrpc-linter init if you don't have custom rules.
+      # - run: npx @open-rpc/openrpc-linter init
+      - run: npx @open-rpc/openrpc-linter@0.0.18 lint openrpc.json -r rules.yml
+```
