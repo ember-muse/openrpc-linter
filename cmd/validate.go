@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -46,79 +45,79 @@ func (l *HttpLoader) Load(url string) (any, error) {
 	return data, nil
 }
 
-func fetchOpenRPCSchema() string {
+func fetchOpenRPCSchema() (string, error) {
 	schemaURL := "https://meta.open-rpc.org"
 	response, err := http.Get(schemaURL)
 	if err != nil {
-		log.Fatalf("Cannot load OpenRPC Document: %v", err)
+		return "", fmt.Errorf("cannot load OpenRPC schema: %w", err)
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatalf("Cannot read OpenRPC Document: %v", err)
+		return "", fmt.Errorf("cannot read OpenRPC schema: %w", err)
 	}
 	if response.StatusCode != http.StatusOK {
-		log.Fatalf("Cannot load OpenRPC Document: %v", response.Status)
+		return "", fmt.Errorf("cannot load OpenRPC schema: %s", response.Status)
 	}
-	return string(body)
+	return string(body), nil
 }
 
 var validateCmd = &cobra.Command{
 	Use:   "validate [file]",
 	Short: "Validate an OpenRPC document",
 	Long:  "Validate an OpenRPC document against basic OpenRPC specification requirements. Defaults to 'openrpc.json' if no file is specified.",
-	Run: func(cmd *cobra.Command, args []string) {
-		filename := "openrpc.json"
-		if len(args) > 0 {
-			filename = args[0]
-		}
+	RunE:  runValidate,
+}
 
-		fmt.Printf("Validating OpenRPC document: %s\n", filename)
+func runValidate(cmd *cobra.Command, args []string) error {
+	filename := "openrpc.json"
+	if len(args) > 0 {
+		filename = args[0]
+	}
 
-		schemaJSON := fetchOpenRPCSchema()
+	fmt.Fprintf(cmd.OutOrStdout(), "Validating OpenRPC document: %s\n", filename)
 
-		compiler := jsonschema.NewCompiler()
+	schemaJSON, err := fetchOpenRPCSchema()
+	if err != nil {
+		return err
+	}
 
-		schemaData, err := jsonschema.UnmarshalJSON(strings.NewReader(schemaJSON))
-		if err != nil {
-			fmt.Printf("Error parsing schema JSON: %v\n", err)
-			return
-		}
-		compiler.UseLoader(&HttpLoader{client: &http.Client{}})
+	compiler := jsonschema.NewCompiler()
 
-		err = compiler.AddResource("schema.json", schemaData)
-		if err != nil {
-			fmt.Printf("Error adding schema: %v\n", err)
-			return
-		}
+	schemaData, err := jsonschema.UnmarshalJSON(strings.NewReader(schemaJSON))
+	if err != nil {
+		return fmt.Errorf("Error parsing schema JSON: %w", err)
+	}
+	compiler.UseLoader(&HttpLoader{client: &http.Client{}})
 
-		schema, err := compiler.Compile("schema.json")
-		if err != nil {
-			fmt.Printf("Error compiling schema: %v\n", err)
-			return
-		}
+	err = compiler.AddResource("schema.json", schemaData)
+	if err != nil {
+		return fmt.Errorf("Error adding schema: %w", err)
+	}
 
-		openrpc, err := os.ReadFile(filename)
-		if err != nil {
-			fmt.Printf("Error reading %s: %v\n", filename, err)
-			return
-		}
+	schema, err := compiler.Compile("schema.json")
+	if err != nil {
+		return fmt.Errorf("Error compiling schema: %w", err)
+	}
 
-		data, err := jsonschema.UnmarshalJSON(strings.NewReader(string(openrpc)))
-		if err != nil {
-			fmt.Printf("Error parsing JSON: %v\n", err)
-			return
-		}
+	openrpc, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("Error reading %s: %w", filename, err)
+	}
 
-		err = schema.Validate(data)
-		if err != nil {
-			fmt.Printf("❌ Validation failed: %v\n", err)
-			return
-		}
+	data, err := jsonschema.UnmarshalJSON(strings.NewReader(string(openrpc)))
+	if err != nil {
+		return fmt.Errorf("Error parsing JSON: %w", err)
+	}
 
-		fmt.Println("✅ OpenRPC document is valid!")
-	},
+	err = schema.Validate(data)
+	if err != nil {
+		return fmt.Errorf("❌ Validation failed: %w", err)
+	}
+
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), "✅ OpenRPC document is valid!")
+	return err
 }
 
 func init() {

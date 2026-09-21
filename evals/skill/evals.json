@@ -1,0 +1,21 @@
+{
+  "skill_name": "openrpc-linter",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use the openrpc-linter skill to fix the lint failure in openrpc.json using the existing rules.yml. The ping method returns pong.",
+      "files": [
+        "fixtures/openrpc.json",
+        "fixtures/rules.yml"
+      ],
+      "expected_output": "The ping method has an accurate, non-empty description and the document passes lint with the original rules.",
+      "expectations": [
+        "The agent runs openrpc-linter against the document with the existing rules.yml.",
+        "The ping method remains present and gains a description consistent with returning pong; unrelated document fields are preserved.",
+        "rules.yml is unchanged.",
+        "A final lint run against the original rules exits successfully."
+      ]
+    }
+  ],
+  "setup": "See README.md for the local runner. It supplies only the skill and task to the agent. File and lint checks are automatic; CLI usage and description accuracy are reviewed in agent.log."
+}

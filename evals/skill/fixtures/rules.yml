@@ -1,0 +1,6 @@
+rules:
+  method-description:
+    given: "$.methods[*].description"
+    severity: error
+    then:
+      function: truthy

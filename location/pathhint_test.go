@@ -35,7 +35,7 @@ func doc() map[string]any {
 					"type": "object",
 				},
 				"Block": map[string]any{
-					"type": "object",
+					"type":  "object",
 					"title": "BlockSchema",
 				},
 			},

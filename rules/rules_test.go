@@ -674,6 +674,9 @@ func BenchmarkExecuteRule(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ExecuteRule(rule, context)
+		_, err := ExecuteRule(rule, context)
+		if err != nil {
+			b.Fatalf("Execute rule: %v", err)
+		}
 	}
 }
