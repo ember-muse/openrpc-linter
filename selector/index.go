@@ -3,6 +3,7 @@ package selector
 import (
 	"strings"
 
+	"github.com/open-rpc/openrpc-linter/metaschema"
 	"github.com/theory/jsonpath/spec"
 )
 
@@ -27,7 +28,7 @@ type Index struct {
 
 // Build walks doc using meta to classify each object and collect candidates.
 // Assumes $refs are already resolved.
-func Build(doc any, meta MetaSchema) *Index {
+func Build(doc any, meta *metaschema.MetaSchema) *Index {
 	idx := &Index{
 		ByField: make(map[string][]*Candidate),
 		ByPath:  make(map[string]*Candidate),
@@ -38,7 +39,7 @@ func Build(doc any, meta MetaSchema) *Index {
 }
 
 type builder struct {
-	meta MetaSchema
+	meta *metaschema.MetaSchema
 	idx  *Index
 }
 

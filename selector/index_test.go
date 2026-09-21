@@ -4,8 +4,18 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/open-rpc/openrpc-linter/metaschema"
 	"github.com/theory/jsonpath/spec"
 )
+
+func metaV14(t *testing.T) *metaschema.MetaSchema {
+	t.Helper()
+	meta, err := metaschema.ForVersion("1.4.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return meta
+}
 
 // docFromJSON returns the minimum useful OpenRPC document for index tests.
 // Decoded via json.Unmarshal so values match what the linter sees at runtime
@@ -43,7 +53,7 @@ const sampleDoc = `{
 
 func TestIndexClassifiesKnownObjects(t *testing.T) {
 	doc := docFromJSON(t, sampleDoc)
-	idx := Build(doc, NewV14())
+	idx := Build(doc, metaV14(t))
 
 	// The infoObject has a "description" property — even though our fixture
 	// document omits it, ByField["description"] must include $.info.
@@ -67,10 +77,10 @@ func TestIndexClassifiesKnownObjects(t *testing.T) {
 
 func TestIndexStopsAtJSONSchemaBoundary(t *testing.T) {
 	doc := docFromJSON(t, sampleDoc)
-	idx := Build(doc, NewV14())
+	idx := Build(doc, metaV14(t))
 
-	// components.schemas/* dereferences to "https://meta.json-schema.tools/"
-	// which is an external ref. The walker must stop there: the inner
+	// components.schemas/* dereferences to the draft-07 meta-schema, which is
+	// an external ref. The walker must stop there: the inner
 	// {type:"object", properties:{a:...}} is a JSON Schema, not an OpenRPC
 	// object, and indexing it would invent missing-field warnings for
 	// arbitrary JSON Schema instances.
@@ -96,7 +106,7 @@ func TestIndexExtensionKeysAreNotCandidateFields(t *testing.T) {
           {"name": "foo", "params": [], "x-internal": true}
         ]
       }`)
-	idx := Build(doc, NewV14())
+	idx := Build(doc, metaV14(t))
 
 	// "x-internal" is matched by patternProperties "^x-" in the meta-schema,
 	// but extensions are intentionally opaque (specificationExtension). We

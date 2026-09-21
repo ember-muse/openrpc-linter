@@ -20,7 +20,7 @@ contains violations with `ruleId`, `path`, and `pathLabels`; omit `-f json` for
 text output. Early failures can produce plain text even with `-f json`.
 
 For OpenRPC meta-schema validation, use `openrpc-linter validate [file]`.
-It fetches the schema over the network and exits nonzero on failure.
+The linter selects an embedded schema for OpenRPC 1.0.x through to the latest version as identified by the https://spec.open-rpc.org from the document's `openrpc` field and exits nonzero on failure.
 
 `lint` and `validate` default to `openrpc.json`. Use `openrpc-linter <command> --help`
 for flags.
