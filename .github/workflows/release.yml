@@ -8,6 +8,12 @@ on:
       - 'README.md'
       - 'docs/**'
       - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to rebuild and republish, e.g. v0.0.18. Leave empty for a normal release.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -15,30 +21,25 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # head_commit is null on workflow_dispatch, so contains() is false and the job runs.
+    if: >-
+      !contains(github.event.head_commit.message, '[skip release]') &&
+      !contains(github.event.head_commit.message, '[no release]')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
 
-      - name: Check if release needed
-        id: check
-        run: |
-          # Check if the last commit is a merge commit or has meaningful changes
-          if git log -1 --pretty=format:"%s" | grep -E "\[skip release\]|\[no release\]"; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Generate new tag
         id: tag
-        if: steps.check.outputs.skip == 'false'
+        if: ${{ !inputs.tag }}
         uses: anothrNick/github-tag-action@1.67.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,11 +48,13 @@ jobs:
           DRY_RUN: false
           # Conventional commits:
           # fix: -> patch version
-          # feat: -> minor version  
+          # feat: -> minor version
           # BREAKING -> major version
 
+      # Idempotent: .goreleaser.yaml sets release.mode: replace and
+      # replace_existing_artifacts, so re-running against an existing tag
+      # overwrites assets instead of failing with 422 already_exists.
       - name: Run GoReleaser
-        if: steps.check.outputs.skip == 'false'
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
@@ -61,15 +64,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node
-        if: steps.check.outputs.skip == 'false'
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
+      # Idempotent: publish.mjs skips any package@version already in the registry.
+      # new_tag is only set when the tag action actually created a tag; on a
+      # re-run of an already-tagged commit it reports `tag` instead.
       - name: Publish npm packages
-        if: steps.check.outputs.skip == 'false'
         run: node npm/scripts/publish.mjs
         env:
-          VERSION: ${{ steps.tag.outputs.new_tag }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
+          VERSION: ${{ inputs.tag || steps.tag.outputs.new_tag || steps.tag.outputs.tag }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
