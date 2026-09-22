@@ -103,7 +103,7 @@ func TestSelectDescendantTerminalUsesIndex(t *testing.T) {
           {"name": "foo", "params": [{"name": "p"}]}
         ]
       }`)
-	idx := Build(doc, NewV14())
+	idx := Build(doc, metaV14(t))
 	got := Select(pathParse(t, "$..description"), doc, idx)
 
 	paths := collectFieldTargets(got)
@@ -133,7 +133,7 @@ func TestSelectScopedDescendantConfinesToScope(t *testing.T) {
           {"name": "foo", "params": []}
         ]
       }`)
-	idx := Build(doc, NewV14())
+	idx := Build(doc, metaV14(t))
 	got := Select(pathParse(t, "$.methods..description"), doc, idx)
 	paths := collectFieldTargets(got)
 	for _, p := range paths {
@@ -158,7 +158,7 @@ func TestSelectFilteredScopedDescendant(t *testing.T) {
           {"name": "new", "params": []}
         ]
       }`)
-	idx := Build(doc, NewV14())
+	idx := Build(doc, metaV14(t))
 	got := Select(pathParse(t, "$.methods[?@.deprecated]..description"), doc, idx)
 	paths := collectFieldTargets(got)
 	if !contains(paths, "$['methods'][0]['description']") {
@@ -182,7 +182,7 @@ func TestSelectCompoundDescendant(t *testing.T) {
           {"name": "foo", "params": [], "result": {"name": "r"}}
         ]
       }`)
-	idx := Build(doc, NewV14())
+	idx := Build(doc, metaV14(t))
 	got := Select(pathParse(t, "$.methods..result.schema"), doc, idx)
 
 	if len(got) != 1 {

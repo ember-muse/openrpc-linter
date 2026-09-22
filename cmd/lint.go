@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/open-rpc/openrpc-linter/location"
+	"github.com/open-rpc/openrpc-linter/metaschema"
 	"github.com/open-rpc/openrpc-linter/reporters"
 	"github.com/open-rpc/openrpc-linter/rules"
 	"github.com/open-rpc/openrpc-linter/selector"
@@ -82,7 +83,12 @@ func RunLint(opts LintOptions) error {
 	// Build the schema-aware index once per lint run. The selector and
 	// every rule function consume Targets derived from this index;
 	// rebuilding per-rule would be wasteful and would lose the cache.
-	index := selector.Build(resolvedDoc, selector.NewV14())
+	meta, err := metaschema.For(openrpcDoc)
+	if err != nil {
+		fmt.Fprintf(opts.Output, "Error selecting OpenRPC meta-schema: %v\n", err)
+		return err
+	}
+	index := selector.Build(resolvedDoc, meta)
 
 	rulesWrapper, err := rules.LoadRulesFileFromPath(opts.RulesFile)
 	if err != nil {
