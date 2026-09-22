@@ -23,8 +23,8 @@ func TestForVersion(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if meta.Version != tt.family {
-				t.Fatalf("got family %q, want %q", meta.Version, tt.family)
+			if meta.VersionFamily != tt.family {
+				t.Fatalf("got family %q, want %q", meta.VersionFamily, tt.family)
 			}
 		})
 	}
@@ -63,8 +63,8 @@ func TestForDocument(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if meta.Version != tt.family {
-				t.Fatalf("got family %q, want %q", meta.Version, tt.family)
+			if meta.VersionFamily != tt.family {
+				t.Fatalf("got family %q, want %q", meta.VersionFamily, tt.family)
 			}
 		})
 	}

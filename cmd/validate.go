@@ -33,12 +33,17 @@ func runValidate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Error parsing JSON: %w", err)
 	}
 
+	version, err := metaschema.Version(data)
+	if err != nil {
+		return fmt.Errorf("Error getting OpenRPC version: %w", err)
+	}
+
 	meta, err := metaschema.For(data)
 	if err != nil {
 		return err
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Validating OpenRPC document: %s (OpenRPC %s)\n", filename, meta.Version)
+	fmt.Fprintf(cmd.OutOrStdout(), "Validating OpenRPC document: %s (OpenRPC %s)\n", filename, version)
 
 	schema, err := meta.Compile()
 	if err != nil {

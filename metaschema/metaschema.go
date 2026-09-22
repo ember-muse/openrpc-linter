@@ -26,8 +26,8 @@ const (
 var ErrUnsupportedVersion = errors.New("unsupported OpenRPC version")
 
 type MetaSchema struct {
-	Version string
-	root    map[string]any
+	VersionFamily string
+	root          map[string]any
 }
 
 var (
@@ -47,8 +47,8 @@ func For(doc any) (*MetaSchema, error) {
 	if !ok {
 		return Latest()
 	}
-	version, ok := root["openrpc"].(string)
-	if !ok {
+	version, err := Version(root)
+	if err != nil {
 		return Latest()
 	}
 	return ForVersion(version)
@@ -68,6 +68,18 @@ func ForVersion(version string) (*MetaSchema, error) {
 	default:
 		return nil, fmt.Errorf("%w %q (supported: %s)", ErrUnsupportedVersion, version, Supported)
 	}
+}
+
+func Version(doc any) (string, error) {
+	root, ok := doc.(map[string]any)
+	if !ok {
+		return "", fmt.Errorf("document is not an OpenRPC document")
+	}
+	version, ok := root["openrpc"].(string)
+	if !ok {
+		return "", fmt.Errorf("document has no openrpc version")
+	}
+	return version, nil
 }
 
 // Latest returns the newest meta-schema known to this linter.
@@ -99,7 +111,7 @@ func parse(version, raw string) (*MetaSchema, error) {
 		return nil, fmt.Errorf("parsing embedded OpenRPC %s meta-schema: root is not an object", version)
 	}
 	rewriteJSONSchemaRefs(rootMap)
-	return &MetaSchema{Version: version, root: rootMap}, nil
+	return &MetaSchema{VersionFamily: version, root: rootMap}, nil
 }
 
 // rewriteJSONSchemaRefs replaces the external meta.json-schema.tools aliases
