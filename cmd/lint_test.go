@@ -283,8 +283,6 @@ extends:
 rules:
   info-license:
     severity: "ignore"
-  error-description:
-    severity: "ignore"
   method-summary:
     severity: "ignore"
   method-description:

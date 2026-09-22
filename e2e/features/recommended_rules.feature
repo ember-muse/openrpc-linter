@@ -32,7 +32,6 @@ Feature: Recommended ruleset
       | method-summary      | methods[0].summary                      |
       | result-description  | methods[0].result.description           |
       | tag-description     | methods[0].tags[0].description          |
-      | error-description   | methods[0].errors[0].description        |
       | example-description | methods[0].examples[0].description      |
       | schema-title        | methods[0].params[0].schema.title       |
       | schema-description  | methods[0].params[0].schema.description |
@@ -77,7 +76,6 @@ Feature: Recommended ruleset
       | param-count-limit     |
       | result-description    |
       | tag-description       |
-      | error-description     |
       | example-description   |
       | schema-title          |
       | schema-description    |
