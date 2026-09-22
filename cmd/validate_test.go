@@ -18,7 +18,8 @@ func TestValidateCommand(t *testing.T) {
 	}{
 		{name: "valid v1.3 default file", document: minimumOpenRPCDocument("1.3.2")},
 		{name: "valid v1.4 default file", document: minimumOpenRPCDocument("1.4.0")},
-		{name: "invalid document", document: `{}`, wantError: "Validation failed"},
+		{name: "invalid document", document: `{"zzz": "xxx", "openrpc": "1.4.0"}`, wantError: "Validation failed"},
+		{name: "invalid document", document: `{}`, wantError: "document has no openrpc version"},
 		{name: "malformed document", document: `{`, wantError: "Error parsing JSON"},
 		{name: "missing file", wantError: "Error reading openrpc.json"},
 		{name: "unsupported version", document: minimumOpenRPCDocument("1.5.0"), wantError: `unsupported OpenRPC version "1.5.0"`},
