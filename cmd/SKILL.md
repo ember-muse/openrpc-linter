@@ -19,8 +19,7 @@ Lint exits nonzero for errors; warnings alone do not fail the run. JSON output
 contains violations with `ruleId`, `path`, and `pathLabels`; omit `-f json` for
 text output. Early failures can produce plain text even with `-f json`.
 
-For OpenRPC meta-schema validation, use `openrpc-linter validate [file]`.
-The linter selects an embedded schema for OpenRPC 1.0.x through to the latest version as identified by the https://spec.open-rpc.org from the document's `openrpc` field and exits nonzero on failure.
+The linter uses the document’s openrpc field to select the appropriate embedded OpenRPC schema, from version 1.0.x through the latest version listed at https://spec.open-rpc.org. It exits with a nonzero status if validation fails.
 
 `lint` and `validate` default to `openrpc.json`. Use `openrpc-linter <command> --help`
 for flags.
