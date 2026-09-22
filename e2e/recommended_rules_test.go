@@ -52,7 +52,7 @@ const canonicalDoc = `{
         }
       },
       "errors": [
-        {"code": 100, "message": "boom", "description": "Generic failure."}
+        {"code": 100, "message": "boom"}
       ],
       "examples": [
         {

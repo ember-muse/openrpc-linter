@@ -48,12 +48,6 @@ rules:
     severity: "warn"
     then:
       function: "truthy"
-  error-description:
-    description: "Error should have a description."
-    given: "$.methods[*].errors[*].description"
-    severity: "warn"
-    then:
-      function: "truthy"
   example-description:
     description: "Example should have a description."
     given: "$.methods[*].examples[*].description"
