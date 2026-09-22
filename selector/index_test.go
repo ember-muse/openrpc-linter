@@ -17,6 +17,15 @@ func metaV14(t *testing.T) *metaschema.MetaSchema {
 	return meta
 }
 
+func metaV13(t *testing.T) *metaschema.MetaSchema {
+	t.Helper()
+	meta, err := metaschema.ForVersion("1.3.2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return meta
+}
+
 // docFromJSON returns the minimum useful OpenRPC document for index tests.
 // Decoded via json.Unmarshal so values match what the linter sees at runtime
 // (map[string]any / []any / float64). Avoids any subtle map-typing skew
@@ -72,6 +81,23 @@ func TestIndexClassifiesKnownObjects(t *testing.T) {
 	if !containsPath(cands, "$['methods'][0]['params'][0]") {
 		t.Fatalf("expected ByField[description] to include params[0], got: %s",
 			renderPaths(cands))
+	}
+}
+
+func TestIndexClassifiesKnownObjectsV13(t *testing.T) {
+	doc := docFromJSON(t, `{
+	  "openrpc": "1.3.2",
+	  "info": {"title": "Demo", "version": "1.0.0"},
+	  "methods": [
+	    {"name": "foo", "params": [{"name": "p1", "schema": {"type": "string"}}]}
+	  ]
+	}`)
+	idx := Build(doc, metaV13(t))
+
+	for _, want := range []string{"$['info']", "$['methods'][0]", "$['methods'][0]['params'][0]"} {
+		if !containsPath(idx.ByField["description"], want) {
+			t.Fatalf("expected ByField[description] to include %s, got: %s", want, renderPaths(idx.ByField["description"]))
+		}
 	}
 }
 
