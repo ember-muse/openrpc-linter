@@ -58,7 +58,7 @@ func For(doc any) (*MetaSchema, error) {
 // spec-types publishes a new OpenRPC specification family.
 func ForVersion(version string) (*MetaSchema, error) {
 	switch {
-	case strings.HasPrefix(version, "1.4."):
+	case version == "1.4" || strings.HasPrefix(version, "1.4."):
 		return loadV14()
 	case strings.HasPrefix(version, "1.0."),
 		strings.HasPrefix(version, "1.1."),

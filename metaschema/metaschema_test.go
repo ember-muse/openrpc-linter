@@ -14,6 +14,7 @@ func TestForVersion(t *testing.T) {
 		{version: "1.0.0-rc0", family: "1.0.x-1.3.x"},
 		{version: "1.2.6", family: "1.0.x-1.3.x"},
 		{version: "1.3.2", family: "1.0.x-1.3.x"},
+		{version: "1.4", family: "1.4.x"},
 		{version: "1.4.0", family: "1.4.x"},
 		{version: "1.4.7", family: "1.4.x"},
 	}
